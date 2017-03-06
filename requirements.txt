@@ -1,0 +1,15 @@
+appdirs==1.4.0
+click==6.7
+Flask==0.12
+itsdangerous==0.24
+Jinja2==2.9.5
+Mako==1.0.6
+MarkupSafe==0.23
+olefile==0.44
+packaging==16.8
+Pillow==4.0.0
+pyparsing==2.1.10
+python-magic==0.4.12
+short-url==1.2.2
+six==1.10.0
+Werkzeug==0.11.15
