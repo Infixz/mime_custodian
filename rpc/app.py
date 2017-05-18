@@ -1,12 +1,13 @@
-# coding: utf-8
+# coding=utf-8
 import os
 
 from werkzeug import SharedDataMiddleware
 from flask import abort, Flask, request, jsonify, redirect, send_file
 
 from ext import db, mako, render_template
-from ..models import PasteFile
+from models import PasteFile
 from utils import get_file_path, humanize_bytes
+from client import create
 
 ONE_MONTH = 60 * 60 * 24 * 30
 
@@ -53,24 +54,24 @@ def index():
         if not uploaded_file:
             return abort(400)
 
-        if w and h:
-            paste_file = PasteFile.rsize(uploaded_file, w, h)
-        else:
-            paste_file = PasteFile.create_by_upload_file(uploaded_file)
-        db.session.add(paste_file)
-        db.session.commit()
+        rs = create(uploaded_file, width=w, height=h)
+        if rs['r']:
+            return rs['error']
+
+        paste_file = rs['paste_file']
 
         return jsonify({
-            'url_d': paste_file.url_d,
-            'url_i': paste_file.url_i,
-            'url_s': paste_file.url_s,
-            'url_p': paste_file.url_p,
+            'url_d': paste_file.url_d % request.host,
+            'url_i': paste_file.url_i % request.host,
+            'url_s': paste_file.url_s % request.host,
+            'url_p': paste_file.url_p % request.host,
             'filename': paste_file.filename,
             'size': humanize_bytes(paste_file.size),
-            'time': str(paste_file.uploadtime),
+            'uploadtime': paste_file.uploadtime,
             'type': paste_file.type,
-            'quoteurl': paste_file.quoteurl
+            'quoteurl': paste_file.quoteurl.replace('%25s', request.host)
         })
+
     return render_template('index.html', **locals())
 
 
@@ -86,9 +87,12 @@ def j():
     uploaded_file = request.files['file']
 
     if uploaded_file:
-        paste_file = PasteFile.create_by_upload_file(uploaded_file)
-        db.session.add(paste_file)
-        db.session.commit()
+        rs = create(uploaded_file)
+        if rs['r']:
+            return rs['error']
+
+        paste_file = rs['paste_file']
+
         width, height = paste_file.image_size
 
         return jsonify({
@@ -127,4 +131,4 @@ def s(symlink):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=9000)
